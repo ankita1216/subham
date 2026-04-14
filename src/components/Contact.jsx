@@ -7,17 +7,13 @@ import { useNavigate } from "react-router-dom";
 
 import { 
   Send, MapPin, Phone, ShieldCheck, 
-  Target, CheckCircle2, Sparkles, Lock,
-  Home, Clock, ChevronDown, User, Mail
+  CheckCircle2, Sparkles,
+  ChevronDown, User, Mail
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "../lib/firebase";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -33,7 +29,7 @@ export default function Contact() {
     name: "",
     email: "",
     phone: "",
-    interest: "3 BHK", 
+    interest: "3 BHK-Starting at @90L", 
     callTime: "9 AM to 12 PM",
     utm_source: "",
     utm_medium: "",
@@ -55,71 +51,16 @@ export default function Contact() {
     }));
   }, []);
 
-  // ==========================================
-  // FIREBASE LOGIC
-  // ==========================================
-  
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: () => {
-            console.log("reCAPTCHA verified");
-          }
-        }
-      );
-    }
-  };
-
-  const handleSendOtp = async () => {
-    if (!formData.phone) return alert("Enter phone number");
-    setLoading(true);
-
-    try {
-      setupRecaptcha();
-      let cleaned = formData.phone.replace(/\D/g, "");
-      if (cleaned.startsWith("0")) cleaned = cleaned.substring(1);
-
-      if (cleaned.length !== 10) {
-        alert("Enter valid 10 digit phone number");
-        setLoading(false);
-        return;
-      }
-
-      const phoneNumber = `+91${cleaned}`;
-      const appVerifier = window.recaptchaVerifier;
-
-      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      setConfirmationResult(result);
-      setIsOtpSent(true);
-      alert("OTP sent to " + phoneNumber);
-
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Error sending OTP");
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isOtpSent) return alert("Please verify phone first");
-    if (!otp || otp.length < 6) return alert("Please enter the 6-digit OTP");
+    if (!formData.phone || formData.phone.length < 10) {
+      return alert("Please enter a valid 10-digit phone number");
+    }
 
     setLoading(true);
 
     try {
-      await confirmationResult.confirm(otp);
-      
       const payload = new URLSearchParams();
       Object.entries(formData).forEach(([key, value]) => {
         payload.append(key, value);
@@ -141,7 +82,7 @@ export default function Contact() {
 
     } catch (error) {
       console.error("Submission Error:", error);
-      alert("Invalid OTP or session expired. Please try again.");
+      alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -151,8 +92,6 @@ export default function Contact() {
 
   return (
     <section id="contact" className="relative w-full bg-[#fafaf8] py-24 lg:py-40 overflow-hidden font-sans text-[#041a14]">
-      <div id="recaptcha-container"></div>
-
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-stretch bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-[#041a14]/5">
           
@@ -208,92 +147,50 @@ export default function Contact() {
                   </div>
                 </div>
 
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Profession</label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input 
-                        type="text" required placeholder="Profession" className={`${inputStyle} pl-11`}
-                        onChange={(e) => setFormData({...formData, profession: e.target.value})}
-                      />
-                    </div> */}
-                  {/* </div> */}
-                  {/* <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Pincode</label>
-                    <div className="relative">
-                      <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input 
-                        type="number" required placeholder="Pincode" className={`${inputStyle} pl-11`}
-                        onChange={(e) => setFormData({...formData, pincode: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                </div> */}
-
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Phone Number</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
                     <input 
-                      type="tel" required placeholder="10-digit mobile" disabled={isOtpSent}
-                      className={`${inputStyle} pl-11 pr-28`} 
+                      type="tel" required placeholder="10-digit mobile" maxLength={10}
+                      className={`${inputStyle} pl-11`} 
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     />
-                    {formData.phone.length >= 10 && !isOtpSent && (
-                      <button 
-                        type="button" onClick={handleSendOtp} disabled={loading}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#041a14] text-[#F2A71D] px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide"
-                      >
-                        {loading ? "..." : "Get OTP"}
-                      </button>
-                    )}
-                    {isOtpSent && <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600"><CheckCircle2 className="w-5 h-5" /></div>}
                   </div>
                 </div>
-
-                <AnimatePresence>
-                  {isOtpSent && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="overflow-hidden">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Verification Code</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input 
-                          type="text" required placeholder="Enter OTP" className={`${inputStyle} pl-11`}
-                          onChange={(e) => setOtp(e.target.value)}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Interested In</label>
-                    <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
-                      <option>3 BHK-Starting at @90L</option>
-                      <option>4 BHK-Starting at @1.15Cr</option>
-                      <option>Duplex-Starting at @1.65cr</option>
-                    </select>
+                    <div className="relative">
+                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
+                        <option>3 BHK-Starting at @90L</option>
+                        <option>4 BHK-Starting at @1.15Cr</option>
+                        <option>Duplex-Starting at @1.65cr</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                   <div className="relative">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Best Time to Call</label>
-                    <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.callTime} onChange={(e) => setFormData({...formData, callTime: e.target.value})}>
-                        <option>Before 9 AM</option>
-                        <option>9 AM to 12 PM</option>
-                        <option>12 PM to 3 PM</option>
-                        <option>3 PM to 5 PM</option>
-                        <option>5 PM to 7 PM</option>
-                    </select>
-                    <ChevronDown className="absolute right-4 top-[70%] -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <div className="relative">
+                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.callTime} onChange={(e) => setFormData({...formData, callTime: e.target.value})}>
+                          <option>Before 9 AM</option>
+                          <option>9 AM to 12 PM</option>
+                          <option>12 PM to 3 PM</option>
+                          <option>3 PM to 5 PM</option>
+                          <option>5 PM to 7 PM</option>
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
                 </div>
 
                 <button 
                   type="submit"
-                  disabled={!isOtpSent || loading}
+                  disabled={loading}
                   className={`w-full py-5 rounded-xl font-bold text-lg tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
-                    !isOtpSent || loading
+                    loading
                     ? "bg-gray-300 text-black cursor-not-allowed opacity-100"
                     : "bg-[#E97323] text-white hover:bg-[#d64b27] hover:-translate-y-1"
                   }`}
@@ -311,6 +208,7 @@ export default function Contact() {
               <div className="text-center h-full flex flex-col items-center justify-center p-8">
                 <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
                 <h3 className="text-3xl font-serif font-medium mb-3">Thank You!</h3>
+                <h4 className="text-xl text-gray-600">Our team will contact you shortly.</h4>
               </div>
             )}
           </div>

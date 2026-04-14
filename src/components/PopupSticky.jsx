@@ -2,18 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { 
   X, Send, Phone, ShieldCheck, 
-  Sparkles, Lock, CheckCircle2, 
-  ChevronDown, User, Mail, Briefcase, MapPin 
+  Sparkles, CheckCircle2, 
+  ChevronDown, User, Mail 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "../lib/firebase";
 import { useNavigate } from "react-router-dom";
 
 export default function PopupSticky({ isOpen, setIsOpen }) {
   const [loading, setLoading] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const navigate = useNavigate();
 
   const colors = {
@@ -27,7 +23,7 @@ export default function PopupSticky({ isOpen, setIsOpen }) {
     name: "",
     email: "",
     phone: "",
-    interest: "3 BHK",
+    interest: "3 BHK-Starting at @90L",
     callTime: "Before 9 AM",
     utm_source: "direct",
     utm_medium: "",
@@ -69,46 +65,18 @@ export default function PopupSticky({ isOpen, setIsOpen }) {
     }
   };
 
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifierPopup) {
-      window.recaptchaVerifierPopup = new RecaptchaVerifier(
-        auth,
-        "recaptcha-popup-container",
-        { size: "invisible" }
-      );
-    }
-  };
-
-  const handleSendOtp = async () => {
-    if (!formData.phone || formData.phone.length < 10) return alert("Enter 10-digit phone");
-    setLoading(true);
-    try {
-      setupRecaptcha();
-      const phoneNumber = `+91${formData.phone.replace(/\D/g, "")}`;
-      const result = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifierPopup);
-      setConfirmationResult(result);
-      setIsOtpSent(true);
-    } catch (error) {
-      console.error(error);
-      alert("Verification failed. Please retry.");
-      if (window.recaptchaVerifierPopup) window.recaptchaVerifierPopup.clear();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!otp) return alert("Please enter OTP");
+    if (!formData.phone || formData.phone.length < 10) return alert("Enter 10-digit phone");
+    
     setLoading(true);
-
     try {
-      await confirmationResult.confirm(otp);
       await sendToWebhook(formData);
       setIsOpen(false);
       navigate("/Info/Thankyou");
     } catch (error) {
-      alert("Invalid OTP code.");
+      console.error(error);
+      alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -118,8 +86,6 @@ export default function PopupSticky({ isOpen, setIsOpen }) {
 
   return (
     <>
-      <div id="recaptcha-popup-container"></div>
-
       <AnimatePresence mode="wait">
         {isOpen && (
           <div key="sticky-popup-v2" className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-y-auto bg-[#041a14]/80 backdrop-blur-md">
@@ -167,43 +133,24 @@ export default function PopupSticky({ isOpen, setIsOpen }) {
                     </div>
                   </div>
 
-                  {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                    <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input placeholder="Profession" required className={`${inputClass} pl-11`} onChange={(e) => setFormData({...formData, profession: e.target.value})} />
-                    </div>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input type="number" placeholder="Pincode" required className={`${inputClass} pl-11`} onChange={(e) => setFormData({...formData, pincode: e.target.value})} />
-                    </div>
-                  </div> */}
-
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                    <input placeholder="10-digit Phone" maxLength={10} disabled={isOtpSent} className={`${inputClass} pl-11 pr-24`} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
-                    {formData.phone.length >= 10 && !isOtpSent && (
-                      <button type="button" onClick={handleSendOtp} className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#041a14] text-[#F2A71D] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-black">
-                        {loading ? "..." : "Verify"}
-                      </button>
-                    )}
-                    {isOtpSent && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />}
+                    <input 
+                      type="tel"
+                      placeholder="10-digit Phone" 
+                      maxLength={10} 
+                      required
+                      className={`${inputClass} pl-11`} 
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                    />
                   </div>
-
-                  <AnimatePresence>
-                    {isOtpSent && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="relative overflow-hidden">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#E97323]" />
-                        <input placeholder="6-Digit OTP" required className={`${inputClass} pl-11 border-[#E97323]/30 bg-orange-50/30`} onChange={(e) => setOtp(e.target.value)} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative">
                       <select className={`${inputClass} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
                         <option>3 BHK-Starting at @90L</option>
-                      <option>4 BHK-Starting at @1.15Cr</option>
-                      <option>Duplex-Starting at @1.65cr</option>
+                        <option>4 BHK-Starting at @1.15Cr</option>
+                        <option>Duplex-Starting at @1.65cr</option>
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
@@ -219,7 +166,11 @@ export default function PopupSticky({ isOpen, setIsOpen }) {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={!isOtpSent || loading} className={`w-full py-4 md:py-5 rounded-2xl font-bold text-lg tracking-wide shadow-2xl transition-all flex items-center justify-center gap-3 ${!isOtpSent || loading ? "bg-gray-300 text-black cursor-not-allowed opacity-100" : "bg-[#E97323] text-white hover:bg-[#D64B27]"}`}>
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className={`w-full py-4 md:py-5 rounded-2xl font-bold text-lg tracking-wide shadow-2xl transition-all flex items-center justify-center gap-3 ${loading ? "bg-gray-300 text-black cursor-not-allowed" : "bg-[#E97323] text-white hover:bg-[#D64B27]"}`}
+                  >
                     {loading ? "Processing..." : <>Confirm Inquiry <Send className="w-5 h-5" /></>}
                   </button>
 

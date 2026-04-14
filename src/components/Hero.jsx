@@ -1,17 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Star, X, Sparkles, User, Mail, Phone as PhoneIcon, Lock, CheckCircle2, Send, Briefcase, MapPin } from "lucide-react";
+import { ChevronDown, Star, X, Sparkles, User, Mail, Phone as PhoneIcon, CheckCircle2, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "../lib/firebase";
 
 // --- INTERNAL CONTACT MODAL COMPONENT ---
 function ContactModal({ onClose }) {
   const [submitted, setSubmitted] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -21,43 +17,35 @@ function ContactModal({ onClose }) {
   };
 
   const [formData, setFormData] = useState({
-    name: "", email: "", phone: "", profession: "", pincode: "", interest: "3 BHK", callTime: "9 AM to 12 PM", utm_source: "direct",
+    name: "", 
+    email: "", 
+    phone: "", 
+    profession: "", 
+    pincode: "", 
+    interest: "3 BHK-Starting at @90L", 
+    callTime: "9 AM to 12 PM", 
+    utm_source: "direct",
   });
-
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-    }
-  };
-
-  const handleSendOtp = async () => {
-    if (!formData.phone || formData.phone.length < 10) return alert("Enter valid 10-digit phone number");
-    setLoading(true);
-    try {
-      setupRecaptcha();
-      const phoneNumber = `+91${formData.phone.replace(/\D/g, "")}`;
-      const result = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-      setConfirmationResult(result);
-      setIsOtpSent(true);
-    } catch (error) {
-      alert("Error sending OTP.");
-      if (window.recaptchaVerifier) window.recaptchaVerifier.clear();
-    } finally { setLoading(false); }
-  };
 
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
-    if (!isOtpSent) return handleSendOtp();
+    if (!formData.phone || formData.phone.length < 10) return alert("Enter valid 10-digit phone number");
+    
     setLoading(true);
     try {
-      await confirmationResult.confirm(otp);
       const payload = new URLSearchParams(formData);
       await fetch("https://connect.pabbly.com/workflow/sendwebhookdata/IjU3NjcwNTZjMDYzMTA0MzA1MjZkNTUzMjUxMzMi_pc", {
-        method: "POST", mode: "no-cors", body: payload.toString(),
+        method: "POST", 
+        mode: "no-cors", 
+        body: payload.toString(),
       });
       setSubmitted(true);
       setTimeout(() => navigate("/Info/Thankyou"), 1500);
-    } catch (error) { alert("Invalid OTP."); } finally { setLoading(false); }
+    } catch (error) { 
+      alert("Submission failed. Please try again."); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const inputStyle = "w-full bg-white border border-gray-100 rounded-xl px-9 md:px-10 py-2.5 md:py-3 outline-none focus:ring-2 focus:ring-[#F2A71D]/10 transition-all placeholder:text-gray-400 text-gray-700 shadow-sm text-xs md:text-sm";
@@ -65,7 +53,6 @@ function ContactModal({ onClose }) {
 
   return (
     <div className="relative w-full max-w-[92vw] md:max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden font-sans border border-gray-100 mx-auto">
-      <div id="recaptcha-container"></div>
       <div className="p-5 md:p-6 pb-10 text-white relative" style={{ backgroundColor: colors.blackish }}>
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2 text-[7px] md:text-[8px] font-black uppercase tracking-[0.3em]" style={{ color: colors.brightOrange }}>
@@ -91,34 +78,15 @@ function ContactModal({ onClose }) {
                   <input type="email" placeholder="Email" required className={inputStyle} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                 </div>
               </div>
-              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="relative">
-                  <Briefcase className={iconStyle} />
-                  <input type="text" placeholder="Profession" required className={inputStyle} onChange={(e) => setFormData({...formData, profession: e.target.value})} />
-                </div>
-                <div className="relative">
-                  <MapPin className={iconStyle} />
-                  <input type="number" placeholder="Pincode" required className={inputStyle} onChange={(e) => setFormData({...formData, pincode: e.target.value})} />
-                </div>
-              </div> */}
+
               <div className="relative">
                 <PhoneIcon className={iconStyle} />
-                <input type="tel" placeholder="10-digit Phone" required className={inputStyle} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
-                {formData.phone.length >= 10 && !isOtpSent && (
-                  <button type="button" onClick={handleSendOtp} className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#F2A71D] bg-[#0b1c14] px-2.5 py-1.5 rounded-lg hover:bg-black transition-all">Verify</button>
-                )}
+                <input type="tel" placeholder="10-digit Phone" maxLength={10} required className={inputStyle} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
               </div>
-              <AnimatePresence>
-                {isOtpSent && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="relative overflow-hidden">
-                    <Lock className={iconStyle} />
-                    <input type="text" placeholder="Enter OTP" required className={inputStyle} onChange={(e) => setOtp(e.target.value)} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
-                  <select className={`${inputStyle} appearance-none cursor-pointer`} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
+                  <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
                     <option>3 BHK-Starting at @90L</option>
                     <option>4 BHK-Starting at @1.15Cr</option>
                     <option>Duplex-Starting at @1.65cr</option>
@@ -126,7 +94,7 @@ function ContactModal({ onClose }) {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                 </div>
                 <div className="relative">
-                  <select className={`${inputStyle} appearance-none cursor-pointer`} onChange={(e) => setFormData({...formData, callTime: e.target.value})}>
+                  <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.callTime} onChange={(e) => setFormData({...formData, callTime: e.target.value})}>
                     <option>Before 9 AM</option>
                     <option>9 AM to 12 PM</option>
                     <option>12 PM to 3 PM</option>
@@ -136,8 +104,8 @@ function ContactModal({ onClose }) {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                 </div>
               </div>
-              <button type="submit" disabled={loading} className={`w-full py-3 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all ${isOtpSent ? "bg-[#0b1c14] text-white hover:bg-black hover:-translate-y-0.5" : "bg-gray-200 text-black cursor-not-allowed opacity-100"}`}>
-                {loading ? "..." : isOtpSent ? "Confirm Inquiry" : "Send Verification"} <Send className="w-3.5 h-3.5" />
+              <button type="submit" disabled={loading} className={`w-full py-3 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all bg-[#0b1c14] text-white hover:bg-black hover:-translate-y-0.5 disabled:bg-gray-300 disabled:text-black disabled:cursor-not-allowed`}>
+                {loading ? "Processing..." : "Confirm Inquiry"} <Send className="w-3.5 h-3.5" />
               </button>
               <div className="flex items-center justify-center gap-1.5 text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-2">
                 <CheckCircle2 className="w-3 h-3 text-green-500" /> Secure Rera Verified
@@ -231,7 +199,6 @@ export default function HeroSection() {
             <img src="/night.jpeg" alt="Subham Kishori Heights" className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
             <div className="absolute inset-0 bg-black/10" />
             
-            {/* UPDATED PREMIUM BADGE - Adjusted mobile positioning (bottom-2) */}
             <motion.div 
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
