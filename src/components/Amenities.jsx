@@ -134,7 +134,7 @@ const Amenities = ({ onOpenPopup }) => {
                   </div>
                   <h3 className="font-serif text-3xl italic">{section.category}</h3>
                 </div>
-
+                
                 <ul className="space-y-6">
                   {section.items.map((item, i) => (
                     <li key={i} className="flex flex-col gap-2 group/item">
