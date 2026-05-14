@@ -3,14 +3,15 @@ import { useEffect } from "react";
 import React, { useState } from "react";
 
 // ✅ FIXED: Use 'react-router-dom' for Vite
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 
-import { 
-  Send, MapPin, Phone, ShieldCheck, 
+import {
+  Send, MapPin, Phone, ShieldCheck,
   CheckCircle2, Sparkles,
   ChevronDown, User, Mail
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
@@ -29,7 +30,7 @@ export default function Contact() {
     name: "",
     email: "",
     phone: "",
-    interest: "3 BHK-Starting at @90L", 
+    interest: "3 BHK-Starting at @90L",
     callTime: "9 AM to 12 PM",
     utm_source: "",
     utm_medium: "",
@@ -88,13 +89,23 @@ export default function Contact() {
     }
   };
 
+  const saveToDatabase = async (data) => {
+    const { error } = await supabase
+      .from("leas") // ya leads agar rename kiya
+      .insert([data]);
+
+    if (error) {
+      console.error("DB Error:", error);
+    }
+  };
+
   const inputStyle = "w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 outline-none focus:border-[#E97323] focus:ring-4 focus:ring-[#E97323]/10 transition-all duration-300 placeholder:text-gray-400 text-[#041a14] font-medium";
 
   return (
     <section id="contact" className="relative w-full bg-[#fafaf8] py-24 lg:py-40 overflow-hidden font-sans text-[#041a14]">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-stretch bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-[#041a14]/5">
-          
+
           {/* LEFT SIDE */}
           <div className="lg:w-2/5 p-12 lg:p-16 text-white flex flex-col justify-between relative overflow-hidden" style={{ backgroundColor: colors.blackish }}>
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#E97323] opacity-10 blur-[80px] rounded-full pointer-events-none"></div>
@@ -129,9 +140,9 @@ export default function Contact() {
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Full Name</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input 
+                      <input
                         type="text" required placeholder="Name" className={`${inputStyle} pl-11`}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       />
                     </div>
                   </div>
@@ -139,9 +150,9 @@ export default function Contact() {
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Email Address</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                      <input 
+                      <input
                         type="email" required placeholder="Email" className={`${inputStyle} pl-11`}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       />
                     </div>
                   </div>
@@ -151,10 +162,10 @@ export default function Contact() {
                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Phone Number</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                    <input 
+                    <input
                       type="tel" required placeholder="10-digit mobile" maxLength={10}
-                      className={`${inputStyle} pl-11`} 
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className={`${inputStyle} pl-11`}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     />
                   </div>
                 </div>
@@ -163,7 +174,7 @@ export default function Contact() {
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Interested In</label>
                     <div className="relative">
-                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({...formData, interest: e.target.value})}>
+                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.interest} onChange={(e) => setFormData({ ...formData, interest: e.target.value })}>
                         <option>3 BHK-Starting at @90L</option>
                         <option>4 BHK-Starting at @1.15Cr</option>
                         <option>Duplex-Starting at @1.65cr</option>
@@ -174,26 +185,25 @@ export default function Contact() {
                   <div className="relative">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5 block ml-1">Best Time to Call</label>
                     <div className="relative">
-                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.callTime} onChange={(e) => setFormData({...formData, callTime: e.target.value})}>
-                          <option>Before 9 AM</option>
-                          <option>9 AM to 12 PM</option>
-                          <option>12 PM to 3 PM</option>
-                          <option>3 PM to 5 PM</option>
-                          <option>5 PM to 7 PM</option>
+                      <select className={`${inputStyle} appearance-none cursor-pointer`} value={formData.callTime} onChange={(e) => setFormData({ ...formData, callTime: e.target.value })}>
+                        <option>Before 9 AM</option>
+                        <option>9 AM to 12 PM</option>
+                        <option>12 PM to 3 PM</option>
+                        <option>3 PM to 5 PM</option>
+                        <option>5 PM to 7 PM</option>
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
-                <button 
+                <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-5 rounded-xl font-bold text-lg tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
-                    loading
+                  className={`w-full py-5 rounded-xl font-bold text-lg tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${loading
                     ? "bg-gray-300 text-black cursor-not-allowed opacity-100"
                     : "bg-[#E97323] text-white hover:bg-[#d64b27] hover:-translate-y-1"
-                  }`}
+                    }`}
                 >
                   {loading ? "Processing..." : <>Confirm Inquiry <Send className="w-5 h-5" /></>}
                 </button>
